@@ -3,9 +3,6 @@
 
 #include <ti/drivers/UART.h>
 
-extern UART_Handle uart;
-void Log (const char *pcFormat, ...);
-
 #define _u8 unsigned char
 #define _u16 unsigned short
 #define _u32 unsigned int
@@ -25,6 +22,7 @@ void Log (const char *pcFormat, ...);
 #define ERROR_ProcessBridgePacket6      11
 #define ERROR_ProcessBridgePacket7      12
 #define ERROR_ProcessBridgePacket8      13
+#define ERROR_RadioTaskSendPacket6      14
 
 
 
@@ -34,6 +32,10 @@ void Log (const char *pcFormat, ...);
 
 //#define SEND_ALIVE_PERIOD 1800000000 / Clock_tickPeriod
 #define SEND_ALIVE_PERIOD 5000000 / Clock_tickPeriod
+
+extern UART_Handle uart;
+
+void Log (const char *pcFormat, ...);
 
 
 #endif /* APP_GLOBAL_H_ */

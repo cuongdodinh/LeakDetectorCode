@@ -49,10 +49,10 @@ static uint8_t radioTaskStack[RFEASYLINKTX_TASK_STACK_SIZE];
 
 static _u8 seqNumber = 0;
 
-_u8 maxRetries = 3;
+_u8 maxRetries = 200;
 _u8 sourceAddress = 0xFF;
 _u8 mac[8];
-_u8 password [8] = {1,1,1,2,2,3,3,3};
+_u8 password [8] = {'1','1','1','2','2','3','3','3'};
 _i8  lastRSSI = 0;
 
 _u8 radioAliveCounter = 0;
@@ -124,7 +124,7 @@ void ProcessBridgePacket()
             return;
         }
         maxRetries = rxPacket.payload[BRIDGE_PACKET_OFFSET_PACKET_TYPE + 1 + PASSWORD_LEN];
-//        Log ("maxRetries: %u", maxRetries);
+        Log ("maxRetries: %u", maxRetries);
         break;
 
     case PACKET_TYPE_REGISTER_NODE:
@@ -163,11 +163,11 @@ bool RadioTaskSendPacket (bool getAck)
 
     int s = 0;
 
-    _u32 t1;//, t2, t3, t4;
+    //_u32 t1;//, t2, t3, t4;
 
     for (s = 0; s < maxRetries; s++)
     {
-        t1 = Clock_getTicks();
+        //t1 = Clock_getTicks();
         EasyLink_transmit(&txPacket);
 
         if (getAck == false)
@@ -219,19 +219,23 @@ bool RadioTaskSendPacket (bool getAck)
                 hasError = true;
             }
 
-            if (hasError == true)
-                continue;
+            if (hasError == false)
+            {
+                lastRSSI = rxPacket.rssi;
 
-
-
-            lastRSSI = rxPacket.rssi;
-
-            break;
+                break;
+            }
         }
+        else
+        {
+            Log ("Error Ack: %d", s);
+            AddToErrorLog (ERROR_RadioTaskSendPacket6, s);
+        }
+
 
         _u32 sleepTicks = (1000000 / 256 / Clock_tickPeriod) * GetRandomNum();
         Task_sleep (sleepTicks);
-        Log ("sleepTicks: %u", sleepTicks);
+        //Log ("sleepTicks: %u", sleepTicks);
 
     }
 
@@ -315,6 +319,8 @@ void RadioTaskSendErrorLog ()
     if (errorPacketsSentSinceLastAlivePacket >= MAX_ERROR_PACKETS_PER_SEND_ALIVE_PERIOD)
         return;
 
+    Log ("RadioTaskSendErrorLog: %d\n\r", errorLogBufferLen);
+
     txPacket.payload[PACKET_OFFSET_PACKET_TYPE] = PACKET_TYPE_ERROR;
 
     memcpy (&txPacket.payload[PACKET_OFFSET_PAYLOAD], errorLogBuffer, errorLogBufferLen);
@@ -369,7 +375,7 @@ static void radioTaskFxn (UArg arg0, UArg arg1)
 
         if (events & RADIO_EVENT_SEND_ALIVE)
         {
-            Log ("Send Alive");
+            Log ("Send Alive %d", seqNumber);
             RadioTaskSendAlive (PACKET_TYPE_ALIVE);
         }
 
